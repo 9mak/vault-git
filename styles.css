@@ -44,23 +44,23 @@
     display: inline-block;
 }
 
-.obsidian-git-center {
+.vault-git-center {
     margin: auto;
     text-align: center;
     width: 50%;
 }
 
-.obsidian-git-textarea {
+.vault-git-textarea {
     display: block;
     margin-left: auto;
     margin-right: auto;
 }
 
-.obsidian-git-disabled {
+.vault-git-disabled {
     opacity: 0.5;
 }
 
-.obsidian-git-center-button {
+.vault-git-center-button {
     display: block;
     margin: 20px auto;
 }

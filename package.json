@@ -1,7 +1,7 @@
 {
-    "name": "obsidian-git",
+    "name": "vault-git",
     "version": "2.38.2",
-    "description": "Integrate Git version control with automatic backup and other advanced features in Obsidian.md",
+    "description": "Vault Git: Git version control for Obsidian, focused on stability on mobile. Fork of Vinzent03/obsidian-git.",
     "main": "main.js",
     "scripts": {
         "dev": "node esbuild.config.mjs dev",

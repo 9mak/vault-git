@@ -41,7 +41,7 @@ export default class SplitDiffView extends ItemView {
         super(leaf);
         this.navigation = true;
         this.registerEvent(
-            this.app.workspace.on("obsidian-git:status-changed", () => {
+            this.app.workspace.on("vault-git:status-changed", () => {
                 if (!this.mergeView) {
                     this.createMergeView().catch(console.error);
                 } else {
@@ -314,7 +314,7 @@ export default class SplitDiffView extends ItemView {
                 ).join("\n") + "\n";
             await (this.plugin.gitManager as SimpleGit).applyPatch(patch);
 
-            this.plugin.app.workspace.trigger("obsidian-git:refresh");
+            this.plugin.app.workspace.trigger("vault-git:refresh");
         };
 
         if (this.state.bRef == undefined) {

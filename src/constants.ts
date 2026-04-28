@@ -6,7 +6,7 @@ export const DATE_TIME_FORMAT_SECONDS = `${DATE_FORMAT} HH:mm:ss`;
 
 export const GIT_LINE_AUTHORING_MOVEMENT_DETECTION_MINIMAL_LENGTH = 40;
 
-export const CONFLICT_OUTPUT_FILE = "conflict-files-obsidian-git.md";
+export const CONFLICT_OUTPUT_FILE = "conflict-files-vault-git.md";
 
 export const DEFAULT_SETTINGS: ObsidianGitSettings = {
     commitMessage: "vault backup: {{date}}",
@@ -70,24 +70,24 @@ export const DEFAULT_SETTINGS: ObsidianGitSettings = {
 };
 
 export const SOURCE_CONTROL_VIEW_CONFIG = {
-    type: "git-view",
+    type: "vault-git-view",
     name: "Source Control",
     icon: "git-pull-request",
 };
 
 export const HISTORY_VIEW_CONFIG = {
-    type: "git-history-view",
+    type: "vault-git-history-view",
     name: "History",
     icon: "history",
 };
 
 export const SPLIT_DIFF_VIEW_CONFIG = {
-    type: "split-diff-view",
+    type: "vault-git-split-diff-view",
     name: "Diff view",
     icon: "diff",
 };
 export const DIFF_VIEW_CONFIG = {
-    type: "diff-view",
+    type: "vault-git-diff-view",
     name: "Diff View",
     icon: "git-pull-request",
 };

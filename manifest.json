@@ -1,10 +1,11 @@
 {
-    "author": "Vinzent",
-    "authorUrl": "https://github.com/Vinzent03",
-    "id": "obsidian-git",
-    "name": "Git",
-    "description": "Integrate Git version control with automatic backup and other advanced features.",
+    "id": "vault-git",
+    "name": "Vault Git",
+    "description": "Git version control for Obsidian, focused on stability on mobile (iOS/Android). Fork of Vinzent03/obsidian-git.",
     "isDesktopOnly": false,
-    "fundingUrl": "https://ko-fi.com/vinzent",
-    "version": "2.38.2"
+    "minAppVersion": "1.5.0",
+    "version": "2.38.2",
+    "author": "Vinzent (original), Vault Git contributors",
+    "authorUrl": "https://github.com/9mak/obsidian-git",
+    "fundingUrl": "https://ko-fi.com/vinzent"
 }

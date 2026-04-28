@@ -64,7 +64,7 @@
             .stage(change.path, false)
             .catch((e) => view.plugin.displayError(e))
             .finally(() => {
-                view.app.workspace.trigger("obsidian-git:refresh");
+                view.app.workspace.trigger("vault-git:refresh");
             });
     }
 
@@ -102,11 +102,11 @@
                         }
                     } else if (result == "discard") {
                         await manager.discard(change.path).finally(() => {
-                            view.app.workspace.trigger("obsidian-git:refresh");
+                            view.app.workspace.trigger("vault-git:refresh");
                         });
                     }
 
-                    view.app.workspace.trigger("obsidian-git:refresh");
+                    view.app.workspace.trigger("vault-git:refresh");
                 },
                 (e) => view.plugin.displayError(e)
             );

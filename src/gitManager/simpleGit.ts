@@ -1,9 +1,7 @@
 import debug from "debug";
-import * as fsPromises from "fs/promises";
 import type { FileSystemAdapter } from "obsidian";
 import { normalizePath, Notice, Platform } from "obsidian";
-import * as path from "path";
-import { resolve, sep } from "path";
+import { fsPromises, path } from "../lazyNodeModules";
 import type * as simple from "simple-git";
 import simpleGit, { GitError, CleanOptions } from "simple-git";
 import {
@@ -117,7 +115,9 @@ export class SimpleGit extends GitManager {
                 // Resolve the relative root reported by git into an absolute path
                 // in case git resides in a different filesystem (eg, WSL)
                 const relativeRoot = await this.git.revparse("--show-cdup");
-                const absoluteRoot = resolve(basePath + sep + relativeRoot);
+                const absoluteRoot = path.resolve(
+                    basePath + path.sep + relativeRoot
+                );
 
                 this.absoluteRepoPath = absoluteRoot;
                 await this.git.cwd(absoluteRoot);
@@ -127,7 +127,7 @@ export class SimpleGit extends GitManager {
                 vaultBasePath,
                 this.app.vault.configDir,
                 "plugins",
-                "obsidian-git"
+                this.plugin.manifest.id
             );
             const askPassPath = path.join(
                 absolutePluginConfigPath,
@@ -200,17 +200,24 @@ export class SimpleGit extends GitManager {
             vaultPath,
             this.app.vault.configDir,
             "plugins",
-            "obsidian-git"
+            this.plugin.manifest.id
         );
     }
 
     private get relPluginConfigPath(): string {
-        return path.join(this.app.vault.configDir, "plugins", "obsidian-git");
+        return path.join(
+            this.app.vault.configDir,
+            "plugins",
+            this.plugin.manifest.id
+        );
     }
     async askpass(): Promise<void> {
         const adapter = this.app.vault.adapter as FileSystemAdapter;
         const relPluginConfigDir =
-            this.app.vault.configDir + "/plugins/obsidian-git/";
+            this.app.vault.configDir +
+            "/plugins/" +
+            this.plugin.manifest.id +
+            "/";
 
         await this.addAskPassScriptToExclude();
 
@@ -312,7 +319,7 @@ export class SimpleGit extends GitManager {
             const vaultRelativeAskPassScriptFile = path.join(
                 this.app.vault.configDir,
                 "plugins",
-                "obsidian-git",
+                this.plugin.manifest.id,
                 ASK_PASS_SCRIPT_FILE
             );
             const repoRelativeAskPassScriptFile = this.getRelativeRepoPath(
@@ -386,9 +393,7 @@ export class SimpleGit extends GitManager {
         const args = ["-C", containingDirectory, "rev-parse", "HEAD"];
 
         const result = this.git.raw(args);
-        result.catch((err) =>
-            console.warn("obsidian-git: rev-parse error:", err)
-        );
+        result.catch((err) => console.warn("vault-git: rev-parse error:", err));
         return (await result).trim();
     }
 
@@ -419,7 +424,7 @@ export class SimpleGit extends GitManager {
                         .map((i) => {
                             const submod = i.match(/'([^']*)'/);
                             if (submod != undefined) {
-                                return root + "/" + submod[1] + sep;
+                                return root + "/" + submod[1] + path.sep;
                             }
                         })
                         .filter((i): i is string => !!i);
@@ -530,7 +535,7 @@ export class SimpleGit extends GitManager {
         const res = await this.git.commit(
             await this.formatCommitMessage(message)
         );
-        this.app.workspace.trigger("obsidian-git:head-change");
+        this.app.workspace.trigger("vault-git:head-change");
 
         return res.summary.changes;
     }
@@ -550,7 +555,7 @@ export class SimpleGit extends GitManager {
                 amend ? ["--amend"] : []
             )
         ).summary.changes;
-        this.app.workspace.trigger("obsidian-git:head-change");
+        this.app.workspace.trigger("vault-git:head-change");
 
         this.plugin.setPluginState({ gitAction: CurrentGitAction.idle });
         return res;
@@ -710,7 +715,7 @@ export class SimpleGit extends GitManager {
                         );
                     }
                 }
-                this.app.workspace.trigger("obsidian-git:head-change");
+                this.app.workspace.trigger("vault-git:head-change");
 
                 const afterMergeCommit = await this.git.revparse([
                     branchInfo.current!,

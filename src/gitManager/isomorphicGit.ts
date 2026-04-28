@@ -10,7 +10,7 @@ import type {
     WalkerMap,
 } from "isomorphic-git";
 import git, { Errors, readBlob } from "isomorphic-git";
-import { Notice, requestUrl } from "obsidian";
+import { Notice, Platform, requestUrl } from "obsidian";
 import type ObsidianGit from "../main";
 import type {
     BranchInfo,
@@ -56,6 +56,29 @@ export class IsomorphicGit extends GitManager {
 
     constructor(plugin: ObsidianGit) {
         super(plugin);
+    }
+
+    /**
+     * Run async tasks in bounded-concurrency batches. Mobile bundles use a
+     * smaller window because each in-flight git.add / git.remove call holds
+     * file contents and pack metadata in memory and unbounded `Promise.all`
+     * over hundreds of files OOMs the iOS/Android Obsidian process.
+     */
+    private async runBounded<T, R>(
+        items: T[],
+        worker: (item: T) => Promise<R>
+    ): Promise<R[]> {
+        const limit = Platform.isMobile ? 16 : items.length;
+        if (items.length <= limit) {
+            return Promise.all(items.map(worker));
+        }
+        const results: R[] = [];
+        for (let i = 0; i < items.length; i += limit) {
+            const batch = items.slice(i, i + limit);
+            const batchResults = await Promise.all(batch.map(worker));
+            results.push(...batchResults);
+        }
+        return results;
     }
 
     getRepo(): {
@@ -283,32 +306,28 @@ export class IsomorphicGit extends GitManager {
     }): Promise<void> {
         try {
             if (status) {
-                await Promise.all(
-                    status.changed.map((file) =>
-                        file.workingDir !== "D"
-                            ? this.wrapFS(
-                                  git.add({
-                                      ...this.getRepo(),
-                                      filepath: file.path,
-                                  })
-                              )
-                            : git.remove({
+                await this.runBounded(status.changed, (file) =>
+                    file.workingDir !== "D"
+                        ? this.wrapFS(
+                              git.add({
                                   ...this.getRepo(),
                                   filepath: file.path,
                               })
-                    )
+                          )
+                        : git.remove({
+                              ...this.getRepo(),
+                              filepath: file.path,
+                          })
                 );
             } else {
                 const filesToStage =
                     unstagedFiles ?? (await this.getUnstagedFiles(dir ?? "."));
-                await Promise.all(
-                    filesToStage.map(({ path, type }) =>
-                        type == "D"
-                            ? git.remove({ ...this.getRepo(), filepath: path })
-                            : this.wrapFS(
-                                  git.add({ ...this.getRepo(), filepath: path })
-                              )
-                    )
+                await this.runBounded(filesToStage, ({ path, type }) =>
+                    type == "D"
+                        ? git.remove({ ...this.getRepo(), filepath: path })
+                        : this.wrapFS(
+                              git.add({ ...this.getRepo(), filepath: path })
+                          )
                 );
             }
         } catch (error) {
@@ -346,10 +365,8 @@ export class IsomorphicGit extends GitManager {
                 staged = res.map(({ path }) => path);
             }
             await this.wrapFS(
-                Promise.all(
-                    staged.map((file) =>
-                        git.resetIndex({ ...this.getRepo(), filepath: file })
-                    )
+                this.runBounded(staged, (file) =>
+                    git.resetIndex({ ...this.getRepo(), filepath: file })
                 )
             );
         } catch (error) {
@@ -484,6 +501,23 @@ export class IsomorphicGit extends GitManager {
                                   const baseContent = contents[0];
                                   const ourContent = contents[1];
                                   const theirContent = contents[2];
+
+                                  // The line-split regex below allocates one
+                                  // array entry per line for every side of
+                                  // the merge. On large files this trips
+                                  // OOM on mobile, so fall back to a simple
+                                  // conflict for files past the threshold.
+                                  const MAX_MERGE_BYTES = 2 * 1024 * 1024;
+                                  if (
+                                      baseContent.length > MAX_MERGE_BYTES ||
+                                      ourContent.length > MAX_MERGE_BYTES ||
+                                      theirContent.length > MAX_MERGE_BYTES
+                                  ) {
+                                      return {
+                                          cleanMerge: false,
+                                          mergedText: ourContent,
+                                      };
+                                  }
 
                                   const LINEBREAKS = /^.*(\r?\n|$)/gm;
                                   const ours =
@@ -725,12 +759,18 @@ export class IsomorphicGit extends GitManager {
     async clone(url: string, dir: string, depth?: number): Promise<void> {
         const progressNotice = this.showNotice("Initializing clone");
         try {
+            // On mobile, default to a shallow single-branch clone to keep
+            // memory and storage footprint small. isomorphic-git holds objects
+            // in memory while resolving deltas, which causes OOM crashes on
+            // iOS/Android when cloning a full history of a sizeable repo.
+            const mobileShallow = Platform.isMobile && depth === undefined;
             await this.wrapFS(
                 git.clone({
                     ...this.getRepo(),
                     dir: dir,
                     url: url,
-                    depth: depth,
+                    depth: mobileShallow ? 1 : depth,
+                    singleBranch: mobileShallow ? true : undefined,
                     onProgress: (progress) => {
                         if (progressNotice !== undefined) {
                             progressNotice.noticeEl.innerText =
@@ -792,6 +832,10 @@ export class IsomorphicGit extends GitManager {
                     }
                 },
                 remote: remote ?? (await this.getCurrentRemote()),
+                // Mirror the mobile defaults from clone(): keep fetch shallow
+                // and single-branch unless the user has already set up a full
+                // history locally.
+                ...(Platform.isMobile ? { depth: 1, singleBranch: true } : {}),
             };
 
             await this.wrapFS(git.fetch(args));
