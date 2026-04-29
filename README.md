@@ -1,139 +1,91 @@
-# Obsidian Git Plugin
+# Vault Git
 
-A powerful community plugin for [Obsidian.md](Obsidian.md) that brings Git integration right into your vault. Automatically commit, pull, push, and see your changes — all within Obsidian.
+A fork of [Vinzent03/obsidian-git](https://github.com/Vinzent03/obsidian-git) focused on **stability on mobile (iOS / Android)**. Bring Git into your [Obsidian](https://obsidian.md) vault — commit, pull, push, and view diffs from inside Obsidian, with a sane default profile for phones.
 
-## 📚 Documentation
+> **Looking for the original?** This is a sibling community plugin, not a replacement. The upstream `obsidian-git` (id: `obsidian-git`) is still maintained — you can install both side by side.
 
-All setup instructions (including mobile), common issues, tips, and advanced configuration can be found in the 📖 [full documentation](https://publish.obsidian.md/git-doc).
+## Why this fork?
 
-> Mobile users: The plugin is **highly unstable ⚠️ !** Please check the dedicated [Mobile](#-mobile-support-%EF%B8%8F--experimental) section below.
+The upstream plugin marks mobile as `⚠️ Experimental` and warns of crashes on clone/pull. The root causes are addressable without rewriting the plugin, so this fork keeps the codebase intact and applies targeted fixes:
+
+- **No more startup crash on mobile.** Node-only built-ins (`child_process`, `fs`, `path`, `os`) were imported eagerly even though every call site was desktop-gated; the top-level `require` fired during plugin load on iOS/Android and tore the plugin down before the UI ever appeared. Vault Git routes them through a lazy `Proxy` so the require only fires when desktop code actually touches them.
+- **Shallow by default on mobile.** `clone` and `fetch` default to `depth: 1` + `singleBranch` on `Platform.isMobile`, keeping the on-device pack file small enough that iOS/Android Obsidian doesn't run out of memory.
+- **Bounded concurrency.** `stageAll` / `unstageAll` previously fanned out to an unbounded `Promise.all` over every changed file; on mobile this OOMed for vaults with hundreds of changes. Vault Git caps in-flight git operations at 16 on mobile.
+- **Safer merge driver.** Files larger than 2 MB now bail to a conflict instead of being split line-by-line via regex (which allocated one array entry per line on every side and was a reliable mobile crash path).
+- **Init isolation.** Auto-pull / auto-commit failures during startup no longer unwind the whole plugin — the user can still drive Git manually if a periodic task can't be wired up.
+
+Beyond mobile, behavior on desktop is intentionally unchanged. The feature set, settings, command palette entries, and documentation linked below all carry over.
+
+## Coexists with `obsidian-git`
+
+Vault Git ships under a distinct plugin id (`vault-git`), distinct view types (`vault-git-view`, `vault-git-history-view`, …), a distinct workspace event namespace (`vault-git:*`), and a distinct CSS class prefix (`vault-git-*`). You can install it next to the upstream plugin in the same vault without collisions.
+
+## Documentation
+
+The setup guide, mobile notes, authentication, and advanced configuration from the upstream plugin still apply: see the 📖 [full documentation](https://publish.obsidian.md/git-doc).
 
 ## Key Features
 
 - 🔁 **Automatic commit-and-sync** (commit, pull, and push) on a schedule.
 - 📥 **Auto-pull on Obsidian startup**
 - 📂 **Submodule support** for managing multiple repositories (desktop only and opt-in)
-- 🔧 **Source Control View** to stage/unstage, commit and diff files - Open it with the `Open source control view` command.
-- 📜 **History View** for browsing commit logs and changed files - Open it with the `Open history view` command.
-- 🔍 **Diff View** for viewing changes in a file - Open it with the `Open diff view` command.
+- 🔧 **Source Control View** to stage/unstage, commit and diff files — open it with the `Open source control view` command.
+- 📜 **History View** for browsing commit logs and changed files — open it with the `Open history view` command.
+- 🔍 **Diff View** for viewing changes in a file — open it with the `Open diff view` command.
 - 📝 **Signs in the editor** to indicate added, modified, and deleted lines/hunks (desktop only).
-- GitHub integration to open files and history in your browser
-
-> For detailed file history, consider pairing this plugin with the [Version History Diff](obsidian://show-plugin?id=obsidian-version-history-diff) plugin.
+- GitHub integration to open files and history in your browser.
 
 ## UI Previews
 
-### 🔧 Source Control View
-
-Manage your file changes directly inside Obsidian like stage/unstage individual files and commit them.
+### Source Control View
 
 ![Source Control View](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/source-view.png)
 
-### 📜 History View
-
-Show the commit history of your repository. The commit message, author, date, and changed files can be shown. Author and date are disabled by default as shown in the screenshot, but can be enabled in the settings.
+### History View
 
 ![History View](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/history-view.png)
 
-### 🔍 Diff View 
-
-Compare versions with a clear and concise diff viewer.
-Open it from the source control view or via the `Open diff view` command.
+### Diff View
 
 ![Diff View](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/diff-view.png)
 
-### 📝 Signs in the Editor
-
-View line-by-line changes directly in the editor with added, modified, and deleted line/hunk indicators. You can stage and reset changes right from the signs. There also commands to navigate between hunks and stage/reset hunks under the cursor. Needs to be enabled in the plugin settings.
+### Signs in the Editor
 
 ![Signs](https://raw.githubusercontent.com/Vinzent03/obsidian-git/master/images/signs.png)
 
-## Available Commands
-> Not exhaustive - these are just some of the most common commands. For a full list, see the Command Palette in Obsidian.
+## 📱 Mobile Support
 
-- 🔄 Changes
-  - `List changed files`: Lists all changes in a modal
-  - `Open diff view`: Open diff view for the current file
-  - `Stage current file`
-  - `Unstage current file`
-  - `Discard all changes`: Discard all changes in the repository
-- ✅ Commit
-  - `Commit`: If files are staged only commits those, otherwise commits only files that have been staged
-  - `Commit with specific message`: Same as above, but with a custom message
-  - `Commit all changes`: Commits all changes without pushing
-  - `Commit all changes with specific message`: Same as above, but with a custom message
-- 🔀 Commit-and-sync
-  - `Commit-and-sync`: With default settings, this will commit all changes, pull, and push
-  - `Commit-and-sync with specific message`: Same as above, but with a custom message
-  - `Commit-and-sync and close`: Same as `Commit-and-sync`, but if running on desktop, will close the Obsidian window. Will not exit Obsidian app on mobile.
-- 🌐 Remote
-  - `Push`, `Pull`
-  - `Edit remotes`: Add new remotes or edit existing remotes
-  - `Remove remote`
-  - `Clone an existing remote repo`: Opens dialog that will prompt for URL and authentication to clone a remote repo
-  - `Open file on GitHub`: Open the file view of the current file on GitHub in a browser window. Note: only works on desktop
-  - `Open file history on GitHub`: Open the file history of the current file on GitHub in a browser window. Note: only works on desktop
-- 🏠 Manage local repository
-  - `Initialize a new repo`
-  - `Create new branch`
-  - `Delete branch`
-  - `CAUTION: Delete repository`
-- 🧪 Miscellaneous
-  - `Open source control view`: Opens side pane displaying [Source control view](#sidebar-view)
-  - `Open history view`: Opens side pane displaying [History view](#history-view)
-  - `Edit .gitignore`
-  - `Add file to .gitignore`: Add current file to `.gitignore`
+Mobile is the focus of this fork, but it is still constrained by what isomorphic-git can do in a JavaScript runtime without native Git. The same API limits as upstream apply:
+
+- No **SSH authentication** ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
+- No rebase merge strategy
+- No submodules
+- Memory still scales with repo size — a "large enough" repo will still OOM. Use shallow clones (default on mobile) and prefer staging individual files.
+
+If you hit a clone/pull crash on mobile that *isn't* explained by raw repo size, please open an issue with the device, OS version, repo size, and reproduction steps.
 
 ## 💻 Desktop Notes
 
-### 🔐 Authentication
+### Authentication
 
-Some Git services may require further setup for HTTPS/SSH authentication. Refer to the [Authentication Guide](https://publish.obsidian.md/git-doc/Authentication)
+Some Git services may require further setup for HTTPS/SSH. Refer to the [Authentication Guide](https://publish.obsidian.md/git-doc/Authentication).
 
 ### Obsidian on Linux
 
-- ⚠️  Snap is not supported due to its sandboxing restrictions.
-- ⚠️  Flatpak is not recommended, because it doesn't have access to all system files. They are actively fixing many issues, but there are still issues. Especially with more advanced setups.
-- ✅ Please use AppImage or a full access installation of your system's package manager instead ([Linux installation guide](https://publish.obsidian.md/git-doc/Installation#Linux))
+- ⚠️ Snap is not supported due to sandboxing restrictions.
+- ⚠️ Flatpak is not recommended; sandbox limitations cause issues with more advanced setups.
+- ✅ Use AppImage or a full-access install via your distro's package manager ([installation guide](https://publish.obsidian.md/git-doc/Installation#Linux)).
 
-## 📱 Mobile Support (⚠️  Experimental)
+## Credits
 
-The Git implementation on mobile is **very unstable**! I would not recommend using this plugin on mobile, but try other syncing services.
+This plugin is a fork. All credit for the design and the bulk of the implementation goes upstream:
 
-One such alternative is [GitSync](https://github.com/ViscousPot/GitSync), which is available on both Android and iOS. It is not associated with this plugin, but it may be a better option for mobile users. A tutorial for setting it up can be found [here](https://viscouspotenti.al/posts/gitsync-all-devices-tutorial).
+- **Original development:** [denolehov](https://github.com/denolehov) (2020 onward).
+- **Primary maintainer of the upstream plugin:** [Vinzent03](https://github.com/Vinzent03), since March 2021. The repo moved to his account in July 2024.
+- **Line Authoring feature:** [GollyTicker](https://github.com/GollyTicker).
 
-> 🧪 The Git plugin works on mobile thanks to [isomorphic-git](https://isomorphic-git.org/), a JavaScript-based re-implementation of Git - but it comes with serious limitations and issues. It is not possible for an Obsidian plugin to use a native Git installation on Android or iOS.
+If your question or feedback is about a feature that exists upstream too, the upstream issue tracker is usually a better venue. For Vault Git specific issues — particularly mobile crashes — please open an issue here.
 
-### ❌ Mobile Feature Limitations
+## License
 
-- No **SSH authentication** ([isomorphic-git issue](https://github.com/isomorphic-git/isomorphic-git/issues/231))
-- Limited repo size, because of memory restrictions
-- No rebase merge strategy
-- No submodules support
-
-### ⚠️ Performance Caveats
-
-> [!caution]
-> Depending on your device and available free RAM, Obsidian may
->
-> - crash on clone/pull
-> - create buffer overflow errors
-> - run indefinitely.
->
-> It's caused by the underlying git implementation on mobile, which is not efficient. I don't know how to fix this. If that's the case for you, I have to admit this plugin won't work for you. So commenting on any issue or creating a new one won't help. I am sorry.
-
-### Tips for Mobile Use:
-
-If you have a large repo/vault I recommend to stage individual files and only commit staged files.
-
-## 🙋 Contact & Credits
-
-- The Line Authoring feature was developed by [GollyTicker](https://github.com/GollyTicker), so any questions may be best answered by her.
-- This plugin was initial developed by [denolehov](https://github.com/denolehov). Since March 2021, it's me [Vinzent03](https://github.com/Vinzent03) who is developing this plugin. That's why the GitHub repository got moved to my account in July 2024.
-- If you have any kind of feedback or questions, feel free to reach out via GitHub issues.
-
-## ☕ Support
-
-If you find this plugin useful and would like to support its development, you can support me on Ko-fi.
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F195IQ5)
+MIT — see [LICENSE](./LICENSE). Copyright is held by the upstream authors; Vault Git contributors are added on top under the same MIT terms.
