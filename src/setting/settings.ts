@@ -1006,7 +1006,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
             );
             const keys = containerEl.createDiv();
             keys.setAttr("align", "center");
-            keys.addClass("obsidian-git-shortcuts");
+            keys.addClass("vault-git-shortcuts");
             if (Platform.isMacOS === true) {
                 keys.createEl("kbd", { text: "CMD (⌘) + OPTION (⌥) + I" });
             } else {
@@ -1018,7 +1018,7 @@ export class ObsidianGitSettingsTab extends PluginSettingTab {
     mayDisableSetting(setting: Setting, disable: boolean) {
         if (disable) {
             setting.setDisabled(disable);
-            setting.setClass("obsidian-git-disabled");
+            setting.setClass("vault-git-disabled");
         }
     }
 

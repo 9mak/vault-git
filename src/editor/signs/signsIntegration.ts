@@ -192,7 +192,7 @@ export class SignsFeature {
     }
 
     private createPluginRefreshedEvent(): EventRef {
-        return this.plg.app.workspace.on("obsidian-git:refresh", () => {
+        return this.plg.app.workspace.on("vault-git:refresh", () => {
             this.refresh();
         });
     }

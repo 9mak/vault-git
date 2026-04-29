@@ -354,7 +354,7 @@ declare module "obsidian" {
          * Emitted when some git action has been completed and plugin has been refreshed
          */
         on(
-            name: "obsidian-git:refreshed",
+            name: "vault-git:refreshed",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
@@ -362,7 +362,7 @@ declare module "obsidian" {
          * Emitted when some git action has been completed and the plugin should refresh
          */
         on(
-            name: "obsidian-git:refresh",
+            name: "vault-git:refresh",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
@@ -370,7 +370,7 @@ declare module "obsidian" {
          * Emitted when the plugin is currently loading a new cached status.
          */
         on(
-            name: "obsidian-git:loading-status",
+            name: "vault-git:loading-status",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
@@ -378,7 +378,7 @@ declare module "obsidian" {
          * Emitted when the HEAD changed.
          */
         on(
-            name: "obsidian-git:head-change",
+            name: "vault-git:head-change",
             callback: () => void,
             ctx?: unknown
         ): EventRef;
@@ -386,13 +386,13 @@ declare module "obsidian" {
          * Emitted when a new cached status is available.
          */
         on(
-            name: "obsidian-git:status-changed",
+            name: "vault-git:status-changed",
             callback: (status: Status) => void,
             ctx?: unknown
         ): EventRef;
 
         on(
-            name: "obsidian-git:menu",
+            name: "vault-git:menu",
             callback: (
                 menu: Menu,
                 path: string,
@@ -402,13 +402,13 @@ declare module "obsidian" {
             ctx?: unknown
         ): EventRef;
         trigger(name: string, ...data: unknown[]): void;
-        trigger(name: "obsidian-git:refreshed"): void;
-        trigger(name: "obsidian-git:refresh"): void;
-        trigger(name: "obsidian-git:loading-status"): void;
-        trigger(name: "obsidian-git:head-change"): void;
-        trigger(name: "obsidian-git:status-changed", status: Status): void;
+        trigger(name: "vault-git:refreshed"): void;
+        trigger(name: "vault-git:refresh"): void;
+        trigger(name: "vault-git:loading-status"): void;
+        trigger(name: "vault-git:head-change"): void;
+        trigger(name: "vault-git:status-changed", status: Status): void;
         trigger(
-            name: "obsidian-git:menu",
+            name: "vault-git:menu",
             menu: Menu,
             path: string,
             source: string,

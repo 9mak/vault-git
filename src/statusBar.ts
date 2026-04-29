@@ -13,7 +13,7 @@ export class StatusBar {
     private lastCommitTimestamp?: Date;
     private unPushedCommits?: number;
     public lastMessageTimestamp: number | null;
-    private base = "obsidian-git-statusbar-";
+    private base = "vault-git-statusbar-";
     private iconEl: HTMLElement;
     private conflictEl: HTMLElement;
     private pausedEl: HTMLElement;
@@ -26,7 +26,7 @@ export class StatusBar {
         this.statusBarEl.setAttribute("data-tooltip-position", "top");
 
         plugin.registerEvent(
-            plugin.app.workspace.on("obsidian-git:refreshed", () => {
+            plugin.app.workspace.on("vault-git:refreshed", () => {
                 this.refreshCommitTimestamp().catch(console.error);
             })
         );

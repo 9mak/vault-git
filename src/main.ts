@@ -12,8 +12,7 @@ import {
     TFolder,
     moment,
 } from "obsidian";
-import * as path from "path";
-import * as fsPromises from "fs/promises";
+import { fsPromises, path } from "./lazyNodeModules";
 import { pluginRef } from "src/pluginGlobalRef";
 import { PromiseQueue } from "src/promiseQueue";
 import { ObsidianGitSettingsTab } from "src/setting/settings";
@@ -103,7 +102,7 @@ export default class ObsidianGit extends Plugin {
     }
 
     async updateCachedStatus(): Promise<Status> {
-        this.app.workspace.trigger("obsidian-git:loading-status");
+        this.app.workspace.trigger("vault-git:loading-status");
         this.cachedStatus = await this.gitManager.status();
         if (this.cachedStatus.conflicted.length > 0) {
             this.localStorage.setConflict(true);
@@ -114,7 +113,7 @@ export default class ObsidianGit extends Plugin {
         }
 
         this.app.workspace.trigger(
-            "obsidian-git:status-changed",
+            "vault-git:status-changed",
             this.cachedStatus
         );
         return this.cachedStatus;
@@ -138,7 +137,7 @@ export default class ObsidianGit extends Plugin {
             await this.updateCachedStatus().catch((e) => this.displayError(e));
         }
 
-        this.app.workspace.trigger("obsidian-git:refreshed");
+        this.app.workspace.trigger("vault-git:refreshed");
 
         // We don't put a line authoring refresh here, as it would force a re-loading
         // of the line authoring feature - which would lead to a jumpy editor-view in the
@@ -222,12 +221,12 @@ export default class ObsidianGit extends Plugin {
      */
     registerStuff(): void {
         this.registerEvent(
-            this.app.workspace.on("obsidian-git:refresh", () => {
+            this.app.workspace.on("vault-git:refresh", () => {
                 this.refresh().catch((e) => this.displayError(e));
             })
         );
         this.registerEvent(
-            this.app.workspace.on("obsidian-git:head-change", () => {
+            this.app.workspace.on("vault-git:head-change", () => {
                 this.refreshUpdatedHead();
             })
         );
@@ -239,8 +238,8 @@ export default class ObsidianGit extends Plugin {
         );
 
         this.registerEvent(
-            this.app.workspace.on("obsidian-git:menu", (menu, path, source) => {
-                this.handleFileMenu(menu, path, source, "obsidian-git:menu");
+            this.app.workspace.on("vault-git:menu", (menu, path, source) => {
+                this.handleFileMenu(menu, path, source, "vault-git:menu");
             })
         );
 
@@ -353,14 +352,14 @@ export default class ObsidianGit extends Plugin {
             this.gitManager.getRelativeVaultPath(".gitignore"),
             "\n" + gitignoreRule
         );
-        this.app.workspace.trigger("obsidian-git:refresh");
+        this.app.workspace.trigger("vault-git:refresh");
     }
 
     handleFileMenu(
         menu: Menu,
         file: TAbstractFile | string,
         source: string,
-        type: "file-manu" | "obsidian-git:menu"
+        type: "file-manu" | "vault-git:menu"
     ): void {
         if (!this.gitReady) return;
         if (!this.settings.showFileMenu) return;
@@ -388,9 +387,7 @@ export default class ObsidianGit extends Plugin {
                                         true
                                     ),
                                 });
-                                this.app.workspace.trigger(
-                                    "obsidian-git:refresh"
-                                );
+                                this.app.workspace.trigger("vault-git:refresh");
                             }
                         });
                     });
@@ -411,9 +408,7 @@ export default class ObsidianGit extends Plugin {
                                     ),
                                 });
 
-                                this.app.workspace.trigger(
-                                    "obsidian-git:refresh"
-                                );
+                                this.app.workspace.trigger("vault-git:refresh");
                             }
                         });
                     });
@@ -445,7 +440,7 @@ export default class ObsidianGit extends Plugin {
             });
             const gitManager = this.app.vault.adapter;
             if (
-                type === "obsidian-git:menu" &&
+                type === "vault-git:menu" &&
                 gitManager instanceof FileSystemAdapter
             ) {
                 menu.addItem((item) => {
@@ -599,9 +594,9 @@ export default class ObsidianGit extends Plugin {
 
                     this.editorIntegration.onReady();
 
-                    this.app.workspace.trigger("obsidian-git:refresh");
+                    this.app.workspace.trigger("vault-git:refresh");
                     /// Among other things, this notifies the history view that git is ready
-                    this.app.workspace.trigger("obsidian-git:head-change");
+                    this.app.workspace.trigger("vault-git:head-change");
 
                     if (
                         !fromReload &&
@@ -614,7 +609,16 @@ export default class ObsidianGit extends Plugin {
                     }
 
                     if (!pausedAutomatics) {
-                        await this.automaticsManager.init();
+                        // Isolate automatics from the rest of init: if a
+                        // periodic task fails to register, the user can still
+                        // operate the plugin manually instead of having the
+                        // whole init unwound.
+                        try {
+                            await this.automaticsManager.init();
+                        } catch (error) {
+                            this.displayError(error);
+                            console.error(error);
+                        }
                     }
 
                     if (pausedAutomatics) {
@@ -782,7 +786,7 @@ export default class ObsidianGit extends Plugin {
             }
         }
 
-        this.app.workspace.trigger("obsidian-git:refresh");
+        this.app.workspace.trigger("vault-git:refresh");
         this.setPluginState({ gitAction: CurrentGitAction.idle });
     }
 
@@ -1063,7 +1067,7 @@ export default class ObsidianGit extends Plugin {
             } else {
                 this.displayMessage("No changes to commit");
             }
-            this.app.workspace.trigger("obsidian-git:refresh");
+            this.app.workspace.trigger("vault-git:refresh");
 
             return true;
         } catch (error) {
@@ -1122,7 +1126,7 @@ export default class ObsidianGit extends Plugin {
                 }
             }
             this.setPluginState({ offlineMode: false });
-            this.app.workspace.trigger("obsidian-git:refresh");
+            this.app.workspace.trigger("vault-git:refresh");
             return true;
         } catch (e) {
             if (e instanceof NoNetworkError) {
@@ -1173,7 +1177,7 @@ export default class ObsidianGit extends Plugin {
 
             this.displayMessage(`Fetched from remote`);
             this.setPluginState({ offlineMode: false });
-            this.app.workspace.trigger("obsidian-git:refresh");
+            this.app.workspace.trigger("vault-git:refresh");
         } catch (error) {
             this.displayError(error);
         }
@@ -1199,7 +1203,7 @@ export default class ObsidianGit extends Plugin {
 
         await this.gitManager.stage(file.path, true);
 
-        this.app.workspace.trigger("obsidian-git:refresh");
+        this.app.workspace.trigger("vault-git:refresh");
 
         this.setPluginState({ gitAction: CurrentGitAction.idle });
         return true;
@@ -1210,7 +1214,7 @@ export default class ObsidianGit extends Plugin {
 
         await this.gitManager.unstage(file.path, true);
 
-        this.app.workspace.trigger("obsidian-git:refresh");
+        this.app.workspace.trigger("vault-git:refresh");
 
         this.setPluginState({ gitAction: CurrentGitAction.idle });
         return true;
@@ -1228,7 +1232,7 @@ export default class ObsidianGit extends Plugin {
         if (selectedBranch != undefined) {
             await this.gitManager.checkout(selectedBranch);
             this.displayMessage(`Switched to ${selectedBranch}`);
-            this.app.workspace.trigger("obsidian-git:refresh");
+            this.app.workspace.trigger("vault-git:refresh");
             await this.branchBar?.display();
             return selectedBranch;
         }
@@ -1400,7 +1404,7 @@ export default class ObsidianGit extends Plugin {
             default:
                 assertNever(result);
         }
-        this.app.workspace.trigger("obsidian-git:refresh");
+        this.app.workspace.trigger("vault-git:refresh");
         return result;
     }
 

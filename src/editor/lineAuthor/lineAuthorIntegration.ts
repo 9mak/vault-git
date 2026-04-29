@@ -217,7 +217,7 @@ export class LineAuthoringFeature {
     }
 
     private createHeadChangeEvent(): EventRef {
-        return this.plg.app.workspace.on("obsidian-git:head-change", () => {
+        return this.plg.app.workspace.on("vault-git:head-change", () => {
             this.refreshLineAuthorViews();
         });
     }

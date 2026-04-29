@@ -1,6 +1,7 @@
 import * as cssColorConverter from "css-color-converter";
-import { spawn, type SpawnOptionsWithoutStdio } from "child_process";
+import type { SpawnOptionsWithoutStdio } from "child_process";
 import deepEqual from "deep-equal";
+import { childProcess } from "./lazyNodeModules";
 import type { App, ItemView, RGB, WorkspaceLeaf } from "obsidian";
 import { Keymap, Menu, moment, TFile } from "obsidian";
 import { BINARY_EXTENSIONS } from "./constants";
@@ -65,7 +66,7 @@ export function mayTriggerFileMenu(
         } else {
             const fileMenu = new Menu();
             app.workspace.trigger(
-                "obsidian-git:menu",
+                "vault-git:menu",
                 fileMenu,
                 filePath,
                 source,
@@ -289,7 +290,7 @@ export function spawnAsync(
 }> {
     return new Promise((resolve, _) => {
         // Spawn the child process
-        const child = spawn(command, args, options);
+        const child = childProcess.spawn(command, args, options);
 
         let stdoutBuffer = "";
         let stderrBuffer = "";
