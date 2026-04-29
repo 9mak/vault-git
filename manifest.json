@@ -4,8 +4,8 @@
     "description": "Git version control for Obsidian, focused on stability on mobile (iOS/Android). Fork of Vinzent03/obsidian-git.",
     "isDesktopOnly": false,
     "minAppVersion": "1.5.0",
-    "version": "2.38.2",
+    "version": "2.38.3",
     "author": "Vinzent (original), Vault Git contributors",
-    "authorUrl": "https://github.com/9mak/obsidian-git",
+    "authorUrl": "https://github.com/9mak/vault-git",
     "fundingUrl": "https://ko-fi.com/vinzent"
 }
