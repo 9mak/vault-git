@@ -7,9 +7,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - uses: pnpm/action-setup@v2
               with:
-                  version: latest
+                  version: 9
             - name: Install modules
               run: pnpm install
             - name: Run Svelte-Check
@@ -18,9 +21,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - uses: pnpm/action-setup@v2
               with:
-                  version: latest
+                  version: 9
             - name: Install modules
               run: pnpm install
             - name: Run ESLint
@@ -29,9 +35,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - uses: pnpm/action-setup@v2
               with:
-                  version: latest
+                  version: 9
             - name: Install modules
               run: pnpm install
             - name: Run Prettier
@@ -40,9 +49,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - uses: pnpm/action-setup@v2
               with:
-                  version: latest
+                  version: 9
             - name: Install modules
               run: pnpm install
             - name: Run tsc
@@ -51,9 +63,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - uses: pnpm/action-setup@v2
               with:
-                  version: latest
+                  version: 9
             - name: Install modules
               run: pnpm install
             - name: Run build
