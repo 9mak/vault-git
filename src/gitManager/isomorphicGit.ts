@@ -505,8 +505,11 @@ export class IsomorphicGit extends GitManager {
                                   // The line-split regex below allocates one
                                   // array entry per line for every side of
                                   // the merge. On large files this trips
-                                  // OOM on mobile, so fall back to a simple
-                                  // conflict for files past the threshold.
+                                  // OOM on mobile, so emit a standard
+                                  // conflict block (the user's tooling
+                                  // recognises <<<<<<< / ======= / >>>>>>>
+                                  // markers) and let them resolve manually
+                                  // instead of silently dropping `theirs`.
                                   const MAX_MERGE_BYTES = 2 * 1024 * 1024;
                                   if (
                                       baseContent.length > MAX_MERGE_BYTES ||
@@ -515,7 +518,12 @@ export class IsomorphicGit extends GitManager {
                                   ) {
                                       return {
                                           cleanMerge: false,
-                                          mergedText: ourContent,
+                                          mergedText:
+                                              "<<<<<<< ours\n" +
+                                              ourContent +
+                                              "\n=======\n" +
+                                              theirContent +
+                                              "\n>>>>>>> theirs\n",
                                       };
                                   }
 
@@ -832,10 +840,11 @@ export class IsomorphicGit extends GitManager {
                     }
                 },
                 remote: remote ?? (await this.getCurrentRemote()),
-                // Mirror the mobile defaults from clone(): keep fetch shallow
-                // and single-branch unless the user has already set up a full
-                // history locally.
-                ...(Platform.isMobile ? { depth: 1, singleBranch: true } : {}),
+                // Cap memory on mobile by fetching only the most recent
+                // commit. Do NOT add `singleBranch` here: it would silently
+                // break users who track multiple remote branches by skipping
+                // ref updates for everything except the current branch.
+                ...(Platform.isMobile ? { depth: 1 } : {}),
             };
 
             await this.wrapFS(git.fetch(args));
