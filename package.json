@@ -1,6 +1,6 @@
 {
     "name": "vault-git",
-    "version": "2.38.3",
+    "version": "2.38.4",
     "description": "Vault Git: Git version control for Obsidian, focused on stability on mobile. Fork of Vinzent03/obsidian-git.",
     "main": "main.js",
     "scripts": {
