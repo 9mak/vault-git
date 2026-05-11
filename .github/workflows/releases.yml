@@ -18,9 +18,12 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
             - uses: pnpm/action-setup@v2
               with:
-                  version: latest
+                  version: 9
             - name: Build
               id: build
               run: |
@@ -44,7 +47,7 @@ jobs:
                   tag_name: ${{ github.ref }}
                   name: ${{ github.ref_name }}
                   generate_release_notes: false
-                  body: See the [changelog](https://github.com/Vinzent03/obsidian-git/blob/master/CHANGELOG.md) for details.
+                  body: See the [README](https://github.com/9mak/vault-git/blob/master/README.md) for what changed.
                   draft: false
                   prerelease: false
                   files: |
